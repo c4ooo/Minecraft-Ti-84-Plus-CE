@@ -1,0 +1,182 @@
+;http://pastebin.com/yy9kUssg
+
+#define dl .dl
+
+#include "ti84pce.inc" 
+#define vram2 vram+76800
+#define SWAP_STATE textShadow ;1-byte
+#define VBUFF textShadow+1 ;3 bytes
+#define NEXT textShadow+4
+#define cordOff(x,y) y*320+x
+#define VBUFFOffDE(x) ld hl,x \ ld de,(VBUFF) \ add hl,de \ ex de,hl ;dont use this
+
+   .org UserMem-2 
+   .db tExtTok,tAsm84CeCmp 
+
+	ld hl,MCMENUName
+	ld de,MCMENU
+	ld b,MCMENU_num
+	call setupSpriteFile
+	
+	ld hl,MCTILESName
+	ld de,MCTILES
+	ld b,MCTILES_num
+	call setupSpriteFile
+
+	push iy
+	di
+	ld a,lcdBpp8
+    ld (mpLcdCtrl),a 
+	ld a,6
+	ld ($E30008),a
+   
+    ld hl, vRam
+    ld (mpLcdBase), hl
+    ld hl, vRam+76800
+    ld (VBUFF), hl
+    ld hl, mpLcdImsc      ; set interrupt
+    ld (hl), 4
+    
+  
+render_menu:
+	ld hl,(MCMENU_pal)
+	call loadPall
+	
+	call renderBkgd
+	
+	ld de,vram+11224
+	ld hl,(mcLogo1)
+	call drawSprite
+	
+	ld de,vram+11349
+	ld hl,(mcLogo2)
+	call drawSprite
+	ld hl,vram
+	ld de,vram2
+	ld bc,320*240
+	ldir
+	
+menu_loop:
+	
+	VBUFFOffDE(cordOff(40,146))
+	ld hl,(button)
+	call drawSprite
+	
+	VBUFFOffDE((105*320)+40)
+	ld hl,(button)
+	call drawSprite
+			
+	VBUFFOffDE((188*320)+40)
+	ld hl,(button)
+	call drawSprite
+	
+MenuY equ $+1
+	ld a,0
+	or a
+	jr nz,MenuYNot0
+
+	VBUFFOffDE(cordOff(40,105))
+	jr MenuYFinish
+MenuYNot0:
+	cp 1
+	jr nz,MenuYNot1
+	VBUFFOffDE(cordOff(40,146))
+	jr MenuYFinish
+MenuYNot1	
+	VBUFFOffDE(cordOff(40,188))
+MenuYFinish:
+	ld hl,(button_down)
+	call drawSprite
+	
+	VBUFFOffDE(cordOff(40,146))
+	ld hl,loadWorld
+	call renderString
+	
+	VBUFFOffDE((105*320)+40)
+	ld hl,newWorld
+	call renderString
+			
+	VBUFFOffDE((188*320)+40)
+	ld hl,quitGame
+	call renderString
+	
+	call flipBuffers
+
+	call keyScan
+	ld a,($F5001E)
+	tst a,%1
+	jr z,mainMenuNoDownKey
+	ld hl,MenuY
+	ld a,(hl)
+	cp 2
+	jr z,menuSkipPause
+	inc (hl)
+	jr mainMenuPause
+	
+mainMenuNoDownKey:
+	tst a,%1000
+	jr z,mainMenuNoUpKey
+	ld hl,MenuY
+	ld a,(hl)
+	or a
+	jr z,menuSkipPause
+	dec (hl)
+	jr mainMenuPause
+	
+mainMenuNoUpKey:
+	ld a,($F5001C)
+	tst a,%1
+	jr z,menuSkipPause
+	ld a,(MenuY)
+	or a
+	jp z,generateWorld
+	
+	dec a
+	jp nz,exit
+	;load game
+
+mainMenuPause:
+	ld b,2
+	call pause
+	jr menuSkipPause
+menuSkipPause:
+	
+	ld hl,$F5001C
+	ld a,(hl)
+	tst a,%01000000
+	jp z, menu_loop
+
+  
+exit:
+    ld hl, vRam
+    ld  (mpLcdBase), hl
+    ld a,lcdBpp16 
+    ld (mpLcdCtrl),a 
+	ld a,2
+	ld ($E30008),a
+    pop iy
+	call _DrawStatusBar
+    ei 
+	ret
+   
+#include "util.ez80"
+#include "char.ez80"
+#include "engine.ez80"
+#include "tilemap.ez80"
+
+#include "MCTILES.inc"
+#include "MCMENU.inc"
+
+loadWorld:
+ .db "Load World",0
+newWorld:
+ .db "New World",0
+quitGame:
+ .db "Quit",0
+badRam:
+  .db "too litle ram;",0
+;  this game reqires 79KB",0
+MCMENUName:
+	.db AppVarObj,"MCMENU",0
+MCTILESName:
+	.db AppVarObj,"MCTILES",0

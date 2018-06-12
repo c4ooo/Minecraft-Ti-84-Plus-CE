@@ -1,0 +1,218 @@
+#define tilemap pixelShadow
+
+#define air 0
+#define unkown 1
+#define bedrock 2
+#define dirt 3
+#define grass 4
+#define cobblestone 5
+#define gravel 6
+#define snow 7
+#define craftingtable 8
+#define furnace 9
+#define furnace 10
+#define treetrunk 11
+#define stone 12
+#define sand_ 13
+#define plank 14
+
+#define WORLD_WIDTH 64
+#define WORLD_HEIGHT 64
+
+playerTileX: ;get rid of this ugly shit for use with ix
+	.db 0,0,0
+playerTileY:
+	.db 0
+playerOffsetX:
+	.db 0
+playerOffsetY:
+	.db 0
+gen_x:
+	.db 0,0,0
+gen_y:
+	.db 0
+gen_ptr:
+	.db 0,0,0
+loopFromX:
+	.db 0,0,0
+loopToX:
+	.db 0,0,0
+loopFromY:
+	.db 0,0,0
+loopToY:
+	.db 0,0,0
+ptr_to_tile:
+	.db 0,0,0
+insetYdraw:
+	.db 0,0,0
+insetYSprite
+	.db 0
+	
+generateWorld:
+	ld hl,tilemap
+	ld (gen_ptr),hl
+	
+	ld hl,0
+	ld (gen_x),hl
+generateWorldXLoop:
+	xor a
+	ld (gen_y),a
+generateWorldYLoop:
+	
+		ld a,(gen_x)
+		ld hl,(gen_ptr)
+		ld (hl),a
+	
+		ld hl,(gen_ptr) ;gen_ptr+=WORLD_WIDTH
+		ld de,WORLD_WIDTH
+		add hl,de
+		ld (gen_ptr),hl
+		
+		ld hl,gen_y
+		ld a,(hl)
+		inc a
+		ld (hl),a
+		cp WORLD_HEIGHT
+		jr nz,generateWorldYLoop
+	
+	ld hl,(gen_ptr) ;gen_ptr-=WORLD_WIDTH*(WORLD_HEIGHT-1)-1
+	ld de,-(WORLD_WIDTH*WORLD_HEIGHT)+1
+	add hl,de
+	ld (gen_ptr),hl
+		
+	ld hl,(gen_x)
+	inc hl
+	ld (gen_x), hl
+	or a
+	ld bc, WORLD_WIDTH
+	sbc hl,bc
+	jr nz,generateWorldXLoop
+	
+	ld hl,0
+	ld (playerTileX),hl
+	ld (playerTileY),hl
+
+	jp runEngine
+	
+runEngine:
+	ld hl,(MCTILES_pal)
+	call loadPall
+	ld ix,playerTileX
+
+engineLoop:
+	call keyscan
+
+	ld a,($F5001E)
+	tst a,%00000001
+	jp z,engineNoDownKey
+	;;DOWN
+	ld hl,playerOffsetY
+	ld a,(hl)
+	inc a
+	;inc a \ inc a \ inc a
+	and $0F
+	ld (hl),a
+	jr nz,engineNoDownKey
+	ld hl,playerTileY
+	inc (hl)
+	
+engineNoDownKey:
+	ld a,($F5001E)
+	tst a,%00000010
+	jp z,engineNoLeftKey
+	;;LEFT
+	ld hl,playerOffsetX
+	ld a,(hl)
+	dec a
+	;dec a \ dec a \ dec a
+	and $0F
+	ld (hl),a
+	cp $0F
+	jr nz,engineNoLeftKey
+	ld hl,(playerTileX)
+	dec hl
+	ld (playerTileX),hl
+
+engineNoLeftKey:
+	ld a,($F5001E)
+	tst a,%00000100
+	jp z,engineNoRightKey
+	;;RIGHT
+	ld hl,playerOffsetX
+	ld a,(hl)
+	inc a
+	;inc a \ inc a \ inc a
+	and $0F
+	ld (hl),a
+	jr nz,engineNoRightKey
+	ld hl,(playerTileX)
+	inc hl
+	ld (playerTileX),hl
+	
+engineNoRightKey:
+	ld a,($F5001E)
+	tst a,%00001000
+	jp z,engineNoUpKey
+	;;UP
+	ld hl,playerOffsetY
+	ld a,(hl)
+	dec a
+	;dec a \ dec a \ dec a
+	and $0F
+	ld (hl),a
+	cp $0F
+	jr nz,engineNoUpKey
+	ld hl,playerTileY
+	dec (hl)
+	
+engineNoUpKey:
+	ld a,($F5001C)
+	tst a,%01000000
+	jp z,engineNoClearKey
+	jp exit
+engineNoClearKey
+	
+	call clearVBUFF
+
+	call drawTileMap
+	
+	
+	VBUFFOffDE(cordOff(50,5))
+	ld hl,(ix-playerTileX+playerTileX)
+	ld bc,testString
+	add hl,bc
+	call renderChar
+		
+	VBUFFOffDE(cordOff(50,5+16))
+	ld hl,0
+	ld l,(ix-playerTileX+playerTileY)
+	ld bc,testString
+	add hl,bc
+	call renderChar
+	
+	VBUFFOffDE(cordOff(50,5+32))
+	ld hl,0
+	ld l,(ix-playerTileX+playerOffsetX)
+	ld bc,testString
+	add hl,bc
+	call renderChar
+	
+	VBUFFOffDE(cordOff(50,5+48))
+	ld hl,0
+	ld l,(ix-playerTileX+playerOffsetY)
+	ld bc,testString
+	add hl,bc
+	call renderChar
+	
+	call flipBuffers
+
+	jp engineLoop
+
+	ret
+	
+
+	
+
+
+testString:
+ .db "0123456789ABCDEF",0

@@ -1,0 +1,156 @@
+clearVBUFF:
+	ld hl,VBUFF
+	ld de,(hl)
+	ld hl,(hl)
+	inc de
+	xor a
+	ld (hl),a
+	ld bc,320*240-1
+	ldir
+	ret
+
+setupSpriteFile:
+;hl - ptr to name
+;bc - table size
+;de - table ptr
+	push hl
+	push bc
+	push de
+	call findData 
+	jr z,spriteFileNotFound
+	ex de,hl
+	pop hl ;hl = table ptr
+	pop bc ;table size
+loopSetupSprite:
+	ld ix,(hl) \ add ix,de \ ld (hl),ix
+	inc hl \ inc hl \ inc hl
+	djnz loopSetupSprite
+	
+	pop hl
+	ret
+	
+spriteFileNotFound:
+	pop hl \ 	pop hl
+	LD     A, 0 \     LD     (CurRow), A 
+    LD     A, 0 \     LD     (CurCol), A 
+    ld hl,spriteFileNotFoundText
+    call _putS
+	LD     A, 1 \     LD     (CurRow), A 
+	LD     A, 0 \     LD     (CurCol), A   
+	pop hl
+    call _putS
+	pop hl
+	RET
+
+spriteFileNotFoundText:
+	.db "Appvar not found:",0
+
+loadPall: ;hl=pointer to pallet
+	ld de,mpLcdPalette
+	ld bc,255
+	ldir
+	ret
+
+pause
+	ld de,0
+pauseLoop:
+	inc de 
+	xor a
+	or d
+	or e 
+	jr nz,pauseLoop
+	djnz pauseLoop
+	ret
+	
+drawSprite: ;hl=sprite de=destination 
+ ld bc,320/1 
+ ld (NextLine+1),bc 
+ ld a,(hl)      ; width 
+ ld (AddMe+1),a 
+ inc hl 
+ ld a,(hl)      ; height 
+ inc hl 
+InLoop: 
+ ld bc,0 
+AddMe: 
+ ld c,0 
+ push de 
+  ldir         ; hl->data 
+ pop de 
+ ex de,hl 
+NextLine: 
+  ld bc,0 
+  add hl,bc 
+ ex de,hl 
+ dec a 
+ jr nz,InLoop 
+ ret
+	
+flipBuffers:
+            ld hl, (VBUFF)
+            ld de, (mpLcdBase)
+            ld (VBUFF), de
+            ld (mpLcdBase), hl
+clear_int:      
+            ld hl, mpLcdIcr
+            set 2, (hl)            ; clear interrupt
+            ld hl, mpLcdRis
+wait_int:      
+            bit 2, (hl)
+            jr z, wait_int         ; wait for interrupt
+            ret
+	
+	
+renderBkgd: ;;renders tiled background to one buffers
+ ld b,20
+ ld de,vram
+renderBkgdLoop:
+	push bc
+	ld hl,(tileRepeat)   ; The first sprite 
+	push de
+    call drawSprite
+	pop de
+	ld hl,16
+	add hl,de
+	ex de, hl
+	pop bc
+	djnz renderBkgdLoop
+	ld hl, vram
+	ld de, vram+5120
+	ld bc, 76800-5120
+	ldir
+    ret
+	
+keyScan: 
+    ld hl,0F50000h 
+    ld (hl),2      ; Set Single Scan mode 
+    xor a,a 
+scan_wait: 
+    cp a,(hl)      ; Wait for Idle mode 
+    jr nz,scan_wait 
+   ret 
+	
+findData: 
+   call   _mov9toop1 
+   call   _chkfindsym 
+   jp   c,__notfound  ; routine to run if not found 
+   call   _chkinram 
+   ex   de,hl 
+   jp   nz,__inarc 
+   jr   __skipsize 
+__notfound: 
+   or   a,a 
+   sbc   hl,hl 
+   ret 
+__inarc: 
+   ld   de,9 
+   add   hl,de 
+   ld   e,(hl) 
+   add   hl,de 
+   inc   hl 
+__skipsize: 
+   inc   hl ; bypass size bytes 
+   inc   hl
+   or 1
+   ret
+	
