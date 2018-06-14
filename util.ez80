@@ -1,3 +1,42 @@
+;LFSRSeed:
+;	.db 0,0,0,0,0,0,0,0
+;
+;;------LFSR------
+;;James Montelongo
+;;optimized by Spencer Putt
+;;out:
+;; a = 8 bit random number
+;RandLFSR:
+;        ld hl,LFSRSeed+4
+;        ld e,(hl)
+;        inc hl
+;        ld d,(hl)
+;        inc hl
+;        ld c,(hl)
+;        inc hl
+;        ld a,(hl)
+;        ld b,a
+;        rl e \ rl d
+;        rl c \ rla
+;        rl e \ rl d
+;        rl c \ rla
+;        rl e \ rl d
+;        rl c \ rla
+;        ld h,a
+;        rl e \ rl d
+;        rl c \ rla
+;        xor b
+;        rl e \ rl d
+;        xor h
+;        xor c
+;        xor d
+;        ld hl,LFSRSeed+6
+;        ld de,LFSRSeed+7
+;        ld bc,7
+;        lddr
+;        ld (de),a
+;
+
 clearVBUFF:
 	ld hl,VBUFF
 	ld de,(hl)

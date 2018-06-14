@@ -1,52 +1,36 @@
-;1281296
-
 drawTileMap: ;uses IY
-	;ld ix,playerTileX
-	;ld hl,(ix-playerTileX+playerTileX) ;;ix or direct address???
-	;ld de,-10
-	;add hl,de
-	;ld (ix-playerTileX+loopFromX),hl
-	;push hl
-	;ld de,20
-	;add hl,de
-	;ld (ix-playerTileX+loopToX),hl
-	;
-	;ld ix,playerTileY
-	;ld hl,0
-	;ld l,(ix-playerTileX+playerTileY)
-	;ld de,-7
-	;add hl,de
-	;ld (ix-playerTileX+loopFromY),hl
-	;push hl
-	;add hl,de
-	;ld (ix-playerTileX+loopToY),hl
+	ld ix,playerTileX
 	
-	;pop hl	;hl=loopFromY
-	;add hl,hl ;*2
-	;add hl,hl ;*4
-	;add hl,hl ;*8
-	;add hl,hl ;*16
-	;add hl,hl ;*64
-	;pop de ;de=loopFromX
-	;add hl,de
-	;ld de,tilemap
-	;ex de,hl
-	;or a
-	;sbc hl,de ;hl=pointer to first tile
-	;ld (ix-playerTileX+ptr_to_tile),hl
+	ld hl,(ix-playerTileX+playerTileX) ;;ix or direct address???                                    ;;calulated twice in total game loop
+	ld de,-10                                                                                       ;;calulated twice in total game loop
+	add hl,de                                                                                       ;;calulated twice in total game loop
+	ld (ix-playerTileX+loopFromX),hl                                                                ;;calulated twice in total game loop
+	push hl                                                                                         ;;calulated twice in total game loop
+	                                                                                                ;;calulated twice in total game loop
+	ld hl,0                                                                                         ;;calulated twice in total game loop
+	ld l,(ix-playerTileX+playerTileY)                                                               ;;calulated twice in total game loop
+	ld de,-7                                                                                        ;;calulated twice in total game loop
+	add hl,de                                                                                       ;;calulated twice in total game loop
+	;ld (ix-playerTileX+loopFromY),hl                                                               ;;calulated twice in total game loop
+	                                                                                                ;;calulated twice in total game loop
+	add hl,hl ;*2                                                                                   ;;calulated twice in total game loop
+	add hl,hl ;*4                                                                                   ;;calulated twice in total game loop
+	add hl,hl ;*8                                                                                   ;;calulated twice in total game loop
+	add hl,hl ;*16                                                                                  ;;calulated twice in total game loop
+	add hl,hl ;*32                                                                                  ;;calulated twice in total game loop
+	add hl,hl ;*64                                                                                  ;;calulated twice in total game loop
+	pop de ;de=loopFromX                                                                            ;;calulated twice in total game loop
+	add hl,de                                                                                       ;;calulated twice in total game loop
+	ld de,tilemap                                                                                   ;;calulated twice in total game loop
+	add hl,de ;hl=pointer to first tile                                                             ;;calulated twice in total game loop
+	ld (ix-playerTileX+ptr_to_tile),hl                                                              ;;calulated twice in total game loop
 
-	;ld iy,hl
-	;
-	ld a,(ix-playerTileX+playerOffsetY)
-	add a,a
-	add a,a
-	add a,a
-	add a,a 
-	ld (ix-playerTileX+insetYsprite),a ; insetYsprite = playerOffsetY * 16
-
-	
-	xor a
-	ld (tileDrawInsetY),a
+	ld a,(ix-playerTileX+playerOffsetY)                                                             ;;calulated twice in total game loop
+	add a,a  ;*2                                                                                        ;;calulated twice in total game loop
+	add a,a   ; *4                                                                                      ;;calulated twice in total game loop
+	add a,a      ;*8                                                                                    ;;calulated twice in total game loop
+	add a,a         ;*16                                                                                 ;;calulated twice in total game loop
+	ld (ix-playerTileX+insetYsprite),a ; insetYsprite = playerOffsetY * 16                           ;;calulated twice in total game loop
 		
 	ld de,(VBUFF)
 			
@@ -57,8 +41,8 @@ drawTileMap: ;uses IY
 	sub b
 	ld (render16WidthX),a
 	
-	ld hl,tilemap
-	ld (ptr_to_tile),hl
+	;ld hl,tilemap
+	;ld (ptr_to_tile),hl
 	ld hl,ptr_to_tile
 	ld iy,(hl)
 	
@@ -70,20 +54,17 @@ drawTileMap: ;uses IY
 	ld e,a
 	add hl,de
 	ex de,hl ;de=drawToPtr
-	
-	xor a
-	ld (tileDrawInsetX),a
-	
-	ld a,16
-	ld (render16WidthX),a
 
 	ld b,19
 drawTileMapLoopX:
 	push bc 
-		call drawTileMapRunYLoop
+		call drawTileMapRunYLoopI
 		ex de,hl
 	pop bc
 	djnz drawTileMapLoopX
+	
+	xor a
+	ld (tileDrawInsetX),a
 	
 	ld a,(ix-playerTileX+playerOffsetX)
 	or a
@@ -131,9 +112,72 @@ drawTileMapDontDrawLastY:
 		add hl,de
 	pop iy
 	inc iy
+	ld de,(ix-playerTileX+loopFromX)
+	inc de
+	ld (ix-playerTileX+loopFromX),de
+	
+	ret
+	
+drawTileMapRunYLoopI: ;;DRAW A COLUMN ;must swap de and hl after call [[[[[[no X culling]]]]]]
+	push iy
+		ld a,(ix-playerTileX+insetYsprite)
+		ld (tileDrawInsetYI),a
+		ld c,(ix-playerTileX+playerOffsetY)
+		ld a,16
+		sub c
+		ld (render16WidthYI),a
+		
+		call getTileSourceI ;;FIRST SPRITE
+	
+		ld a,16
+		ld (render16WidthYI),a
+			
+		xor a 
+		ld (tileDrawInsetYI),a
+		
+		ld b,14
+drawTileMapLoopYI:
+		push bc
+			call getTileSourceI
+		pop bc
+		djnz drawTileMapLoopYI
+				
+		ld a,(ix-playerTileX+playerOffsetY)
+		or a
+		jr z,drawTileMapDontDrawLastYI
+		
+		ld (render16WidthYI),a
+		call getTileSourceI
+	
+drawTileMapDontDrawLastYI:
+
+		ld hl,-(240*320)+16
+		add hl,de
+	pop iy
+	inc iy
+	ld de,(ix-playerTileX+loopFromX)
+	inc de
+	ld (ix-playerTileX+loopFromX),de
+	
 	ret
 	
 getTileSource:
+	ld hl,(ix-playerTileX+loopFromX)
+	add hl,hl
+	jr c,getTileSourceOOB
+	ld bc,WORLD_WIDTH*2
+	sbc hl,bc
+	jr nc,getTileSourceOOB 
+	
+	or a
+	lea hl,iy
+	ld bc,tilemap
+	sbc hl,bc
+	jr c,getTileSourceOOB
+	ld bc,WORLD_WIDTH*WORLD_HEIGHT
+	sbc hl,bc
+	jr nc,getTileSourceOOB
+
 	ld a,(iy)
 	ld bc,0
 	ld b,a 
@@ -147,7 +191,10 @@ tileDrawInsetY equ $+1
 tileDrawInsetX equ $+1
 	ld c,0
 	add hl,bc
-
+	jp render16x16
+getTileSourceOOB:
+	ld hl,(tiles)
+	
 render16x16: ;hl = source ;de = destination
 	ld a,0
 render16WidthY equ $-1
@@ -172,20 +219,52 @@ render16WidthX equ $-1
 	add iy,bc ;iy += WORLD_WIDTH
     ret
 	
-sampleImage:
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 005h,005h,005h,005h,005h,005h,005h,005h,009h,009h,009h,009h,009h,009h,009h,009h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
- .db 009h,009h,009h,009h,009h,009h,009h,009h,005h,005h,005h,005h,005h,005h,005h,005h
+getTileSourceI:
+	ld hl,(ix-playerTileX+loopFromX)
+	add hl,hl
+	jr c,getTileSourceOOBI
+	ld bc,WORLD_WIDTH*2
+	sbc hl,bc
+	jr nc,getTileSourceOOBI
+	
+	or a
+	lea hl,iy
+	ld bc,tilemap
+	sbc hl,bc
+	jr c,getTileSourceOOBI
+	ld bc,WORLD_WIDTH*WORLD_HEIGHT
+	sbc hl,bc
+	jr nc,getTileSourceOOBI
+
+	ld a,(iy)
+	ld bc,0
+	ld b,a 
+	ld hl,(tiles)
+	add hl,bc
+	;ld hl,sampleImage
+	ld bc,0
+tileDrawInsetYI equ $+1
+	ld c,0
+	add hl,bc
+	jp render16x16I
+getTileSourceOOBI:
+	ld hl,(tiles)
+	
+render16x16I: ;hl = source ;de = destination
+	ld a,0
+render16WidthYI equ $-1
+render16x16LoopI:
+    ld bc,16
+	;push hl
+	;push de
+    ldir
+	ex de,hl
+	ld bc,320-16
+    add hl,bc 
+	ex de,hl ;de=destination+(320-16)
+    dec a
+    jr nz,render16x16LoopI
+	
+	ld bc,WORLD_WIDTH
+	add iy,bc ;iy += WORLD_WIDTH
+    ret

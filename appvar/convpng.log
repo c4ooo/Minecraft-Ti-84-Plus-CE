@@ -13,11 +13,22 @@ palette quality : 100.00%
 
 --- MCTILES (ASM) ---
 building palette with [256] available indices ...
-built palette with [256] indices.
-palette quality : 99.96%
+built palette with [52] indices.
+palette quality : 100.00%
 1:
- tiles : 99.96%
+ tiles : 100.00%
 
-converted in 1 s
+exporting appvar: MCMENU.8xp
+ button
+ button_down
+ mcLogo1
+ mcLogo2
+ tileRepeat
+ MCMENU (palette)
+exporting appvar: MCTILES.8xp
+ tiles
+ MCTILES (palette)
+
+converted in 0 s
 
 finished!

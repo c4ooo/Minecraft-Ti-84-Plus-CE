@@ -163,6 +163,7 @@ exit:
 #include "char.ez80"
 #include "engine.ez80"
 #include "tilemap.ez80"
+#include "engineUtil.ez80"
 
 #include "MCTILES.inc"
 #include "MCMENU.inc"

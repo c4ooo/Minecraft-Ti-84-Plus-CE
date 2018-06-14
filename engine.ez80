@@ -1,20 +1,10 @@
 #define tilemap pixelShadow
 
 #define air 0
-#define unkown 1
-#define bedrock 2
+#define bedrock 1
+#define stone 2
 #define dirt 3
 #define grass 4
-#define cobblestone 5
-#define gravel 6
-#define snow 7
-#define craftingtable 8
-#define furnace 9
-#define furnace 10
-#define treetrunk 11
-#define stone 12
-#define sand_ 13
-#define plank 14
 
 #define WORLD_WIDTH 64
 #define WORLD_HEIGHT 64
@@ -28,71 +18,25 @@ playerOffsetX:
 playerOffsetY:
 	.db 0
 gen_x:
-	.db 0,0,0
+	.db 0,0,0 ;first byte not set
 gen_y:
 	.db 0
 gen_ptr:
 	.db 0,0,0
 loopFromX:
 	.db 0,0,0
-loopToX:
-	.db 0,0,0
-loopFromY:
-	.db 0,0,0
-loopToY:
-	.db 0,0,0
 ptr_to_tile:
 	.db 0,0,0
 insetYdraw:
 	.db 0,0,0
-insetYSprite
+insetYSprite:
+	.db 0
+tileSelect:
+	.db 0
+playerDir:
 	.db 0
 	
-generateWorld:
-	ld hl,tilemap
-	ld (gen_ptr),hl
-	
-	ld hl,0
-	ld (gen_x),hl
-generateWorldXLoop:
-	xor a
-	ld (gen_y),a
-generateWorldYLoop:
-	
-		ld a,(gen_x)
-		ld hl,(gen_ptr)
-		ld (hl),a
-	
-		ld hl,(gen_ptr) ;gen_ptr+=WORLD_WIDTH
-		ld de,WORLD_WIDTH
-		add hl,de
-		ld (gen_ptr),hl
-		
-		ld hl,gen_y
-		ld a,(hl)
-		inc a
-		ld (hl),a
-		cp WORLD_HEIGHT
-		jr nz,generateWorldYLoop
-	
-	ld hl,(gen_ptr) ;gen_ptr-=WORLD_WIDTH*(WORLD_HEIGHT-1)-1
-	ld de,-(WORLD_WIDTH*WORLD_HEIGHT)+1
-	add hl,de
-	ld (gen_ptr),hl
-		
-	ld hl,(gen_x)
-	inc hl
-	ld (gen_x), hl
-	or a
-	ld bc, WORLD_WIDTH
-	sbc hl,bc
-	jr nz,generateWorldXLoop
-	
-	ld hl,0
-	ld (playerTileX),hl
-	ld (playerTileY),hl
-
-	jp runEngine
+#include "gen.ez80"
 	
 runEngine:
 	ld hl,(MCTILES_pal)
@@ -166,43 +110,234 @@ engineNoRightKey:
 	dec (hl)
 	
 engineNoUpKey:
+	ld a,($F50014)
+	tst a,%01000000
+	jp z,engineNoMathKey
+	;;Look Left
+	ld a,0
+	ld (ix-playerTileX+playerDir),a
+
+engineNoMathKey
+	ld a,($F50018)
+	tst a,%01000000
+	jp z,engineNoPrgmKey
+	;;look right
+	ld a,1
+	ld (ix-playerTileX+playerDir),a
+	
+engineNoPrgmKey:
+	ld a,($F50016)
+	tst a,%10000000
+	jp z,engineNoXKey
+	;;look Up
+	ld a,(ix-playerTileX+tileSelect)
+	cp 5
+	jp z,engineNoXKey
+	inc (ix-playerTileX+tileSelect)
+	
+engineNoXKey:
+	ld a,($F50016)
+	tst a,%01000000
+	jp z,engineNoAppsKey
+	;;look Down
+	ld a,(ix-playerTileX+tileSelect)
+	or a
+	jp z,engineNoAppsKey
+	dec (ix-playerTileX+tileSelect)
+
+engineNoAppsKey:
+
 	ld a,($F5001C)
 	tst a,%01000000
 	jp z,engineNoClearKey
 	jp exit
 engineNoClearKey
 	
-	call clearVBUFF
-
+	nop
 	call drawTileMap
+	nop
 	
-	
-	VBUFFOffDE(cordOff(50,5))
-	ld hl,(ix-playerTileX+playerTileX)
-	ld bc,testString
-	add hl,bc
-	call renderChar
-		
-	VBUFFOffDE(cordOff(50,5+16))
 	ld hl,0
-	ld l,(ix-playerTileX+playerTileY)
-	ld bc,testString
-	add hl,bc
-	call renderChar
+	ld l,(ix-playerTileX+playerTileY)	
+	add hl,hl ;*2
+	add hl,hl ;*4
+	add hl,hl ;*8
+	add hl,hl ;*16
+	add hl,hl ;*32
+	add hl,hl ;*64
+	ld de,(ix-playerTileX+playerTileX) 
+	add hl,de
+	ld de,tilemap
+	add hl,de ;hl=pointer to player tile
+	ld (ix-playerTileX+ptr_to_tile),hl     
+	ld hl,ptr_to_tile
+	ld iy,(hl)
 	
-	VBUFFOffDE(cordOff(50,5+32))
-	ld hl,0
-	ld l,(ix-playerTileX+playerOffsetX)
-	ld bc,testString
-	add hl,bc
-	call renderChar
+	;ld hl,cordOff(160,112) \ ld de,(VBUFF) \ add hl,de
+	;
+	;ld de,0
+	;ld a,(ix-playerTileX+playerOffsetY)       
+	;add a,a                                   
+	;add a,a                                   
+	;add a,a                                   
+	;add a,a
+	;ld e,a
+	;or a
+	;sbc hl,de
+	;ld e,(ix-playerTileX+playerOffsetX)
+	;sbc hl,de
+	;ex de,hl
 	
-	VBUFFOffDE(cordOff(50,5+48))
-	ld hl,0
-	ld l,(ix-playerTileX+playerOffsetY)
-	ld bc,testString
+	ld de,$001400
+	ld a,(ix-playerTileX+playerOffsetY)       
+	add a,a                                   
+	add a,a                                   
+	add a,a                                   
+	add a,a
+	ld (ix-playerTileX+insetYsprite),a
+	ld e,a	
+	mlt de
+	ld hl,cordOff(160,112)
+	or a 
+	sbc hl,de
+	ld de,0
+	ld e,(ix-playerTileX+playerOffsetX)
+	sbc hl,de
+	ld de,(VBUFF) 
+	add hl,de
+	
+	ld a,(ix-playerTileX+playerDir)
+	or a
+	jp z,playerLookingLeft
+	
+	ld a,(ix-playerTileX+tileSelect)
+	or a
+	jp nz,enineNR0
+	ld de,cordOff(0,16*2)
+	ld bc,WORLD_WIDTH*2
+	jp callRenderTileSelector
+	
+enineNR0:
+	dec a
+	jp nz,enineNR1
+	ld de,cordOff(16,16*2)
+	ld bc,WORLD_WIDTH*2+1
+	jp callRenderTileSelector
+	
+enineNR1:
+	dec a
+	jp nz,enineNR2
+	ld de,cordOff(16,16)
+	ld bc,WORLD_WIDTH+1
+	jp callRenderTileSelector
+	
+enineNR2:
+	dec a
+	jp nz,enineNR3
+	ld de,cordOff(16,0)
+	ld bc,1
+	jp callRenderTileSelector
+	
+enineNR3:
+	dec a
+	jp nz,enineNR4
+	ld de,cordOff(16,-16)
+	ld bc,-WORLD_WIDTH+1
+	jp callRenderTileSelector
+	
+enineNR4:
+	ld de,cordOff(0,-16)
+	ld bc,-WORLD_WIDTH
+	jp callRenderTileSelector
+	
+playerLookingLeft:
+	ld a,(ix-playerTileX+tileSelect)
+	or a
+	jp nz,enineNL0
+	ld de,cordOff(0,16*2)
+	ld bc,WORLD_WIDTH*2
+	jp callRenderTileSelector
+enineNL0:
+	dec a
+	jp nz,enineNL1
+	ld de,cordOff(-16,16*2)
+	ld bc,WORLD_WIDTH*2-1
+	jp callRenderTileSelector
+	
+enineNL1:
+	dec a
+	jp nz,enineNL2
+	ld de,cordOff(-16,16)
+	ld bc,WORLD_WIDTH-1
+	jp callRenderTileSelector
+	
+enineNL2:
+	dec a
+	jp nz,enineNL3
+	ld de,cordOff(-16,0)
+	ld bc,-1
+	jp callRenderTileSelector
+	
+enineNL3:
+	dec a
+	jp nz,enineNL4
+	ld de,cordOff(-16,-16)
+	ld bc,-WORLD_WIDTH-1
+	jp callRenderTileSelector
+	
+enineNL4:
+	ld de,cordOff(0,-16)
+	ld bc,-WORLD_WIDTH
+
+callRenderTileSelector:
+	add hl,de
+	push bc
+	call renderTileSelector
+	pop  bc
+	lea hl,iy
 	add hl,bc
-	call renderChar
+	
+	ld a,($F50012)
+	tst a,%00100000
+	jp z,engineNo2ndKey
+	ld a,5
+	ld (hl),a
+	
+engineNo2ndKey:
+	ld a,($F50014)
+	tst a,%10000000
+	jp z,engineNoAlphaKey
+	xor a
+	ld (hl),a
+	
+engineNoAlphaKey:
+	;VBUFFOffDE(cordOff(50,5))
+	;ld hl,0
+	;ld l,(ix-playerTileX+playerDir)
+	;ld bc,testString
+	;add hl,bc
+	;call renderChar
+	;	
+	;VBUFFOffDE(cordOff(50,5+16))
+	;ld hl,0
+	;ld l,(ix-playerTileX+tileSelect)
+	;ld bc,testString
+	;add hl,bc
+	;call renderChar
+	;
+	;VBUFFOffDE(cordOff(50,5+32))
+	;ld hl,0
+	;ld l,(ix-playerTileX+playerOffsetX)
+	;ld bc,testString
+	;add hl,bc
+	;call renderChar
+	;
+	;VBUFFOffDE(cordOff(50,5+48))
+	;ld hl,0
+	;ld l,(ix-playerTileX+playerOffsetY)
+	;ld bc,testString
+	;add hl,bc
+	;call renderChar
 	
 	call flipBuffers
 
