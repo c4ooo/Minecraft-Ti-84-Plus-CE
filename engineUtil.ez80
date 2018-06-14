@@ -1,0 +1,53 @@
+renderTileSelector: ;hl = location
+	push hl
+	pop de
+		
+	ld bc,15
+	inc de
+	ld a,50
+	ld (hl),a
+	ldir
+	ld de,320-15
+	add hl,de
+	
+	push hl
+	pop de
+
+	ld bc,15
+	inc de
+	ld (hl),a
+	ldir
+
+	
+	ld b,12
+renderTileSelectorLoop:
+	ld de,320-15
+	add hl,de
+	ld (hl),a \ inc hl \ ld (hl),a
+	ld de,13
+	add hl,de
+	ld (hl),a \ inc hl \ ld (hl),a
+	djnz renderTileSelectorLoop
+	ld de,320-15
+	add hl,de
+	
+	push hl
+	pop de
+	
+	ld bc,15
+	inc de
+	ld (hl),a
+	ldir
+	
+	ld de,320-15
+	add hl,de
+	
+	push hl
+	pop de
+
+		ld bc,15
+	inc de
+	ld (hl),a
+	ldir
+	
+	ret

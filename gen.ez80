@@ -1,0 +1,91 @@
+generateWorld:
+	ld hl,tilemap
+	ld (gen_ptr),hl
+	
+	ld hl,0
+	ld (gen_x),hl
+generateWorldXLoop:
+	xor a
+	ld (gen_y),a
+generateWorldYLoop:
+	
+		
+		ld a,(gen_y)
+		or a
+		jp z,genWorldEdge
+		cp WORLD_HEIGHT-1
+		jp z,genWorldEdge
+		
+		ld hl,(gen_x)
+		xor a
+		or h
+		or l
+		jp z,genWorldEdge
+		ld bc,0
+		sbc hl,bc
+		jp z,genWorldEdge
+		ld bc,WORLD_WIDTH-1
+		sbc hl,bc
+		jp z,genWorldEdge
+		
+		ld a,(gen_y)
+		cp 20
+		jp c,genWorldUnder30
+		cp 21
+		jp c,genWorldUnder31
+		cp 26
+		jp c,genWorldUnder36
+		ld a,stone
+		jr genWorldPlace
+genWorldUnder30:
+		ld a,air
+		jr genWorldPlace
+genWorldUnder31:
+		ld a,grass
+		jr genWorldPlace
+genWorldUnder36
+		ld a,dirt
+genWorldPlace:
+		ld hl,(gen_ptr)
+		ld (hl),a	
+		jp genWorldEdgeFinish
+genWorldEdge:
+		ld a,bedrock
+		ld hl,(gen_ptr)
+		ld (hl),a	
+	
+genWorldEdgeFinish:
+
+		ld hl,(gen_ptr) ;gen_ptr+=WORLD_WIDTH
+		ld de,WORLD_WIDTH
+		add hl,de
+		ld (gen_ptr),hl
+		
+		ld hl,gen_y
+		ld a,(hl)
+		inc a
+		ld (hl),a
+		cp WORLD_HEIGHT
+		jr nz,generateWorldYLoop
+	ld hl,(gen_ptr) ;gen_ptr-=WORLD_WIDTH*(WORLD_HEIGHT-1)-1
+	ld de,-(WORLD_WIDTH*WORLD_HEIGHT)+1
+	add hl,de
+	ld (gen_ptr),hl
+		
+	ld hl,(gen_x)
+	inc hl
+	ld (gen_x), hl
+	or a
+	ld bc, WORLD_WIDTH
+	sbc hl,bc
+	jp nz,generateWorldXLoop
+	
+	ld hl,0
+	ld (playerTileX),hl
+	ld (playerTileY),hl
+	ld a,3
+	ld (tileSelect),a
+	xor a
+	ld (playerDir),a
+	
+	jp runEngine
