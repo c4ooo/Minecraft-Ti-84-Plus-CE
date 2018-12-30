@@ -146,12 +146,6 @@ engineNoXKey:
 	dec (ix-playerTileX+tileSelect)
 
 engineNoAppsKey:
-
-	ld a,($F5001C)
-	tst a,%01000000
-	jp z,engineNoClearKey
-	jp exit
-engineNoClearKey
 	
 	nop
 	call drawTileMap
@@ -300,7 +294,7 @@ callRenderTileSelector:
 	ld a,($F50012)
 	tst a,%00100000
 	jp z,engineNo2ndKey
-	ld a,5
+	ld a,3
 	ld (hl),a
 	
 engineNo2ndKey:
@@ -341,13 +335,12 @@ engineNoAlphaKey:
 	
 	call flipBuffers
 
-	jp engineLoop
 
-	ret
-	
+	ld a,($F5001C)
+	tst a,%01000000
+	jp z,engineLoop
 
-	
-
+	#include "pauseMenu.ez80"
 
 testString:
  .db "0123456789ABCDEF",0

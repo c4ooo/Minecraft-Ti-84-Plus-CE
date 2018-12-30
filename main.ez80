@@ -37,26 +37,27 @@
     ld hl, mpLcdImsc      ; set interrupt
     ld (hl), 4
     
-  
+	call flipBuffers
+	
 render_menu:
+	xor a
+	ld (MenuY),a
+
 	ld hl,(MCMENU_pal)
 	call loadPall
+
+	call waitForEnterRelease
 	
+menu_loop:
 	call renderBkgd
 	
-	ld de,vram+11224
+	VBUFFOffDE(11224)
 	ld hl,(mcLogo1)
 	call drawSprite
 	
-	ld de,vram+11349
+	VBUFFOffDE(11349)
 	ld hl,(mcLogo2)
 	call drawSprite
-	ld hl,vram
-	ld de,vram2
-	ld bc,320*240
-	ldir
-	
-menu_loop:
 	
 	VBUFFOffDE(cordOff(40,146))
 	ld hl,(button)
@@ -138,7 +139,7 @@ mainMenuNoUpKey:
 mainMenuPause:
 	ld b,2
 	call pause
-	jr menuSkipPause
+	jp menuSkipPause ;;most useless peice of code ever
 menuSkipPause:
 	
 	ld hl,$F5001C
@@ -164,10 +165,17 @@ exit:
 #include "engine.ez80"
 #include "tilemap.ez80"
 #include "engineUtil.ez80"
+#include "saveMenu.ez80"
 
 #include "MCTILES.inc"
 #include "MCMENU.inc"
 
+worldName:
+	.db "Test World",0
+saveFile:
+	.db AppVarObj,"MCSAVE"
+saveIndex:
+	.db 0,0	
 loadWorld:
  .db "Load World",0
 newWorld:

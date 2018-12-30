@@ -37,6 +37,16 @@
 ;        ld (de),a
 ;
 
+waitForEnterRelease:
+	call keyScan
+	ld a,($F5001C)
+	tst a,%1
+	jr nz,waitForEnterRelease
+	ld a,($F5001C)
+	tst a,%01000000
+	jr nz,waitForEnterRelease
+	ret
+
 clearVBUFF:
 	ld hl,VBUFF
 	ld de,(hl)
@@ -142,7 +152,7 @@ wait_int:
 	
 renderBkgd: ;;renders tiled background to one buffers
  ld b,20
- ld de,vram
+ ld de,(VBUFF)
 renderBkgdLoop:
 	push bc
 	ld hl,(tileRepeat)   ; The first sprite 
@@ -154,8 +164,10 @@ renderBkgdLoop:
 	ex de, hl
 	pop bc
 	djnz renderBkgdLoop
-	ld hl, vram
-	ld de, vram+5120
+	ld de, (VBUFF)
+	ld hl, 5120
+	add hl,de
+	ex de,hl
 	ld bc, 76800-5120
 	ldir
     ret

@@ -1,0 +1,115 @@
+load_pause_menu:
+	ld hl,(MCMENU_pal) ;;pause Menu
+	call loadPall
+	
+	call waitForEnterRelease
+	
+	xor a
+	ld (pauseMenuY),a
+	
+pauseMenuLoop:
+	call renderBkgd
+
+	VBUFFOffDE(cordOff(40,16))
+	ld hl,gamePaused
+	call renderString
+	
+	VBUFFOffDE(cordOff(40,146))
+	ld hl,(button)
+	call drawSprite
+	
+	VBUFFOffDE((105*320)+40)
+	ld hl,(button)
+	call drawSprite
+			
+	VBUFFOffDE((188*320)+40)
+	ld hl,(button)
+	call drawSprite
+	
+pauseMenuY equ $+1
+	ld a,0
+	or a
+	jr nz,pauseMenuYNot0
+
+	VBUFFOffDE(cordOff(40,105))
+	jr pauseMenuYFinish
+pauseMenuYNot0:
+	cp 1
+	jr nz,pauseMenuYNot1
+	VBUFFOffDE(cordOff(40,146))
+	jr pauseMenuYFinish
+pauseMenuYNot1	
+	VBUFFOffDE(cordOff(40,188))
+pauseMenuYFinish:
+	ld hl,(button_down)
+	call drawSprite
+	
+	VBUFFOffDE((105*320)+40)
+	ld hl,retToGame
+	call renderString
+
+	VBUFFOffDE(cordOff(40,146))
+	ld hl,saveGame
+	call renderString
+			
+	VBUFFOffDE((188*320)+40)
+	ld hl,exitToMenu
+	call renderString
+
+	call flipBuffers
+	
+	call keyScan
+	ld a,($F5001E)
+	tst a,%1
+	jr z,pauseMenuNoDownKey
+	ld hl,pauseMenuY
+	ld a,(hl)
+	cp 2
+	jr z,pauseMenuSkipPause
+	inc (hl)
+	jr pauseMenuPause
+	
+pauseMenuNoDownKey:
+	tst a,%1000
+	jr z,pauseMenuNoUpKey
+	ld hl,pauseMenuY
+	ld a,(hl)
+	or a
+	jr z,pauseMenuSkipPause
+	dec (hl)
+	jr pauseMenuPause
+	
+pauseMenuNoUpKey:
+	ld a,($F5001C)
+	tst a,%1
+	jr z,pauseMenuSkipPause
+	ld a,(pauseMenuY)
+	or a
+	jp z,runEngine
+	
+	dec a
+	jp nz,render_menu
+	jp load_save_menu
+
+pauseMenuPause:
+	ld b,2
+	call pause
+	jr pauseMenuSkipPause
+pauseMenuSkipPause:
+	
+	ld hl,$F5001C
+	ld a,(hl)
+	tst a,%01000000
+	jp z, pauseMenuLoop
+
+	jp runEngine
+	
+
+gamePaused:
+	.db "Game Paused",0
+retToGame:
+	.db "Return to game",0
+saveGame:
+	.db "Save Game",0
+exitToMenu:
+	.db "Exit to main menu",0

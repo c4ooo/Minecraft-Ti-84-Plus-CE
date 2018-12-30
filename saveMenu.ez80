@@ -1,0 +1,136 @@
+load_save_menu:
+	xor a
+	ld (saveMenuY),a
+	
+	call waitForEnterRelease
+	
+saveMenuLoop:
+	call renderBkgd
+		
+	VBUFFOffDE(cordOff(40,16))
+	ld hl,saveGameText
+	call renderString
+	
+	VBUFFOffDE(cordOff(40,40))
+	ld hl,saveGameSlot
+	call renderString
+	
+	push de
+	ld bc,testString+1
+	ld hl,0
+	ld a,(saveIndex)
+	ld l,a
+	add hl,bc
+	call renderChar
+	pop de
+	ld hl,16
+	add hl,de
+	ex de,hl
+	
+	ld hl,saveGameSlot2
+	call renderChar
+	
+	VBUFFOffDE((146*320)+40)
+	ld hl,(button)
+	call drawSprite
+			
+	VBUFFOffDE((188*320)+40)
+	ld hl,(button)
+	call drawSprite
+	
+saveMenuY equ $+1
+	ld a,0
+	or a
+	jr nz,saveMenuYNot0
+
+	VBUFFOffDE(cordOff(40,146))
+	jr saveMenuYFinish
+saveMenuYNot0:
+	VBUFFOffDE(cordOff(40,188))
+saveMenuYFinish:
+	ld hl,(button_down)
+	call drawSprite
+
+	VBUFFOffDE(cordOff(40,146))
+	ld hl,saveToSlot
+	call renderString
+			
+	VBUFFOffDE((188*320)+40)
+	ld hl,cancelSave
+	call renderString
+
+	call flipBuffers
+	
+	call keyScan
+	ld a,($F5001E)
+	tst a,%1
+	jr z,saveMenuNoDownKey
+	ld hl,saveMenuY
+	ld a,(hl)
+	dec a
+	jr z,saveMenuSkipPause
+	inc (hl)
+	jr saveMenuPause
+	
+saveMenuNoDownKey:
+	tst a,%1000
+	jr z,saveMenuNoUpKey
+	ld hl,saveMenuY
+	ld a,(hl)
+	or a
+	jr z,saveMenuSkipPause
+	dec (hl)
+	jr saveMenuPause
+	
+saveMenuNoUpKey:
+	tst a,%10
+	jr z,saveMenuNoLeftKey
+	ld hl,saveIndex
+	ld a,(hl)
+	dec a
+	jr z,saveMenuSkipPause
+	dec (hl)
+	jr saveMenuPause
+	
+saveMenuNoLeftKey:
+	tst a,%100
+	jr z,saveMenuNoRightKey
+	ld hl,saveIndex
+	ld a,(hl)
+	cp 8
+	jr z,saveMenuSkipPause
+	inc (hl)
+	jr saveMenuPause
+	
+saveMenuNoRightKey:
+	ld a,($F5001C)
+	tst a,%1
+	jr z,saveMenuSkipPause
+	ld a,(saveMenuY)
+	or a
+	jp nz,load_pause_menu
+	;make save
+
+saveMenuPause:
+	ld b,2
+	call pause
+	jr saveMenuSkipPause
+saveMenuSkipPause:
+	
+	ld hl,$F5001C
+	ld a,(hl)
+	tst a,%01000000
+	jp z, saveMenuLoop
+
+	jp load_pause_menu
+
+saveGameText:
+	.db "Save Game",0
+saveGameSlot:
+	.db "<Slot-",0
+saveGameSlot2:
+	.db ">"
+saveToSlot:
+	.db "Save To Slot",0
+cancelSave:
+	.db "Cancel",0

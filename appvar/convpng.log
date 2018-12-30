@@ -1,0 +1,34 @@
+opened convpng.ini
+
+--- MCMENU (ASM) ---
+building palette with [256] available indices ...
+built palette with [126] indices.
+palette quality : 100.00%
+5:
+ button : 100.00%
+ button_down : 100.00%
+ mcLogo1 : 100.00%
+ mcLogo2 : 100.00%
+ tileRepeat : 100.00%
+
+--- MCTILES (ASM) ---
+building palette with [256] available indices ...
+built palette with [52] indices.
+palette quality : 100.00%
+1:
+ tiles : 100.00%
+
+exporting appvar: MCMENU.8xp
+ button
+ button_down
+ mcLogo1
+ mcLogo2
+ tileRepeat
+ MCMENU (palette)
+exporting appvar: MCTILES.8xp
+ tiles
+ MCTILES (palette)
+
+converted in 1 s
+
+finished!
